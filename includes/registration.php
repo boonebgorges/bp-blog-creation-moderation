@@ -24,7 +24,7 @@ class BPBCM_Registration {
 		if ( ! is_null( $reg_id ) ) {
 			$reg = get_post( $reg_id );
 
-			if ( ! is_a( $reg, 'WP_Post' ) || 'bp-blog-registration' !== $reg->post_type ) {
+			if ( ! isset( $reg->post_type ) || 'bp-blog-registration' !== $reg->post_type ) {
 				return;
 			}
 
@@ -129,6 +129,8 @@ Reject: %7$s', 'bpbcm' ),
 			'ID' => $this->registration_id,
 			'post_status' => 'publish',
 		) );
+
+		return true;
 	}
 
 	public function reject() {
@@ -136,5 +138,7 @@ Reject: %7$s', 'bpbcm' ),
 			'ID' => $this->registration_id,
 			'post_status' => 'trash',
 		) );
+
+		return true;
 	}
 }

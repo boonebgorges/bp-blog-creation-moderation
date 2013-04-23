@@ -182,11 +182,19 @@ class BPBCM {
 	}
 
 	public function catch_process_request() {
-		if ( ! is_user_logged_in() ) {
-			return;
-		}
 
 		if ( bp_is_blogs_component() && ! bp_current_action() && ! empty( $_GET['registration_id'] ) && ! empty( $_GET['action'] ) ) {
+			if ( ! is_user_logged_in() ) {
+				bp_core_no_access( array(
+					'mode' => '2',
+					'redirect_to' => add_query_arg( array(
+						'registration_id' => $_GET['registration_id'],
+						'action' => $_GET['action'],
+					), bp_get_root_domain() . '/' . bp_get_blogs_root_slug() ),
+				) );
+				return;
+			}
+
 			// Verify that this is a legit request
 			$reg_id = intval( $_GET['registration_id'] );
 			$registration = new BPBCM_Registration( $reg_id );
@@ -201,15 +209,24 @@ class BPBCM {
 				if ( 'approve' === $action ) {
 					if ( 'approved' !== $registration->get_status() ) {
 						$success = $registration->approve();
+
+						if ( $success ) {
+							$message = __( 'You have successfully approved this blog application.', 'bpbcm' );
+						}
 					}
 				} elseif ( 'reject' === $action ) {
 					if ( 'rejected' !== $registration->get_status() ) {
 						$success = $registration->reject();
+
+						if ( $success ) {
+							$message = __( 'You have successfully rejected this blog application.', 'bpbcm' );
+						}
 					}
 				}
 			}
 
 			remove_action( 'bp_screens', 'bp_blogs_screen_index', 2 );
+			add_filter( 'the_content', create_function( '', 'return esc_html( "' . $message . '" );' ), 9999 );
 
 //			bp_core_load_template( 'blogs/index' );
 		}
