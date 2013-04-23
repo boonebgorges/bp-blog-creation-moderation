@@ -212,7 +212,7 @@ class BPBCM {
 			<p><?php echo esc_html( $this->success_message() ) ?></p>
 		<?php else : ?>
 			<label for="bpbcm-moderator"><?php echo esc_html( $this->moderator_title() ) ?>: </label>
-			<input id="bpbcm-moderator" name="bpbcm-moderator" />
+			<input autocomplete="off" id="bpbcm-moderator" name="bpbcm-moderator" />
 			<p class="description"><?php echo esc_html( $this->moderator_description() ) ?></a>
 		<?php endif; ?>
 
