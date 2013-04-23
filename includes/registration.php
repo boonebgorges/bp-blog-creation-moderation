@@ -18,6 +18,7 @@ class BPBCM_Registration {
 	var $user_email;
 
 	var $registration_id;
+	var $status;
 
 	public function __construct( $reg_id = null ) {
 		if ( ! is_null( $reg_id ) ) {
@@ -41,7 +42,9 @@ class BPBCM_Registration {
 			$this->site_id = $meta['site_id'];
 			$this->meta = $meta;
 
-			$moderator_id = get_post_meta( $reg_id, 'bpbcm_moderator_id', true );
+			$this->status = $reg->post_status;
+
+			$this->moderator_id = intval( get_post_meta( $reg_id, 'bpbcm_moderator_id', true ) );
 		}
 	}
 
@@ -76,7 +79,7 @@ class BPBCM_Registration {
 		$link_base = bp_get_root_domain() . '/' . bp_get_blogs_root_slug() . '/';
 		$approve_link = add_query_arg( array(
 			'registration_id' => $this->registration_id,
-			'action' => 'accept',
+			'action' => 'approve',
 		), $link_base );
 		$reject_link = add_query_arg( array(
 			'registration_id' => $this->registration_id,
@@ -103,5 +106,34 @@ Reject: %7$s', 'bpbcm' ),
 		);
 		$message = apply_filters( 'bpbcm_notification_email_body', $message );
 		var_dump( $message ); die();
+	}
+
+	public function get_status() {
+		$status = 'pending';
+		switch ( $this->status ) {
+			case 'publish' :
+				$status = 'approved';
+				break;
+			case 'trash' :
+				$status = 'rejected';
+				break;
+		}
+		return $status;
+	}
+
+	public function approve() {
+		wpmu_create_blog( $this->domain, $this->path, $this->title, $this->user_id, $this->meta, $this->site_id );
+		bp_blogs_confirm_blog_signup( $this->domain, $this->path, $this->title, $this->user_login, $this->user_email, $this->meta );
+		wp_update_post( array(
+			'ID' => $this->registration_id,
+			'post_status' => 'publish',
+		) );
+	}
+
+	public function reject() {
+		wp_update_post( array(
+			'ID' => $this->registration_id,
+			'post_status' => 'trash',
+		) );
 	}
 }

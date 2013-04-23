@@ -180,21 +180,41 @@ class BPBCM {
 			unset( $_POST['submit'] );
 			$_POST['status'] = 'success';
 
-			//wpmu_create_blog( $domain, $path, $blog_title, $current_user->ID, $meta, $wpdb->siteid );
-			//bp_blogs_confirm_blog_signup($domain, $path, $blog_title, $current_user->user_login, $current_user->user_email, $meta);
 
 		}
 	}
 
 	public function catch_process_request() {
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
 
 		if ( bp_is_blogs_component() && ! bp_current_action() && ! empty( $_GET['registration_id'] ) && ! empty( $_GET['action'] ) ) {
-			remove_action( 'bp_screens', 'bp_blogs_screen_index', 2 );
-
 			// Verify that this is a legit request
 			$reg_id = intval( $_GET['registration_id'] );
 			$registration = new BPBCM_Registration( $reg_id );
-			bp_core_load_template( 'blogs/index' );
+
+			if ( ! empty( $registration->registration_id ) ) {
+				// Make sure this is the intended moderator
+				if ( bp_loggedin_user_id() !== $registration->moderator_id ) {
+					return;
+				}
+
+				$action = $_GET['action'];
+				if ( 'approve' === $action ) {
+					if ( 'approved' !== $registration->get_status() ) {
+						$success = $registration->approve();
+					}
+				} elseif ( 'reject' === $action ) {
+					if ( 'rejected' !== $registration->get_status() ) {
+						$success = $registration->reject();
+					}
+				}
+			}
+
+			remove_action( 'bp_screens', 'bp_blogs_screen_index', 2 );
+
+//			bp_core_load_template( 'blogs/index' );
 		}
 	}
 
