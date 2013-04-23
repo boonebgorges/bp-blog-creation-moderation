@@ -64,7 +64,7 @@ class BPBCM {
 	 * Outputs the 'Moderator' description on the Create Blog screen
 	 */
 	public function moderator_description() {
-		return apply_filters( 'bpbcm_moderator_descritpion', 'Type the username of the moderator who will approve your blog registration.' );
+		return apply_filters( 'bpbcm_moderator_description', 'Type the username of the moderator who will approve your blog registration.' );
 	}
 
 	/**
@@ -119,7 +119,7 @@ class BPBCM {
 	 *       bp_show_blog_signup_form() needs to be called directly from the template
 	 */
 	public function catch_create_request() {
-		global $current_user, $current_site, $wpdb;
+		global $current_user, $current_site, $wpdb, $bp;
 
 		if ( bp_is_blogs_component() && bp_is_current_action( 'create' ) && ! empty( $_POST['submit'] ) ) {
 
@@ -140,14 +140,13 @@ class BPBCM {
 			$moderator_id = is_a( $moderator_user, 'WP_User' ) ? $moderator_user->ID : 0;
 
 			if ( ! $this->can_moderate( $moderator_id ) ) {
-				$result['errors']->add( 'bpbcm-moderator', 'That is not a valid moderator.' );
+				$result['errors']->add( 'bpbcm-moderator', 'That is not a valid moderator. Please try again.' );
 			}
 
 			if ( $result['errors']->get_error_code() ) {
+				$result['moderator'] = $moderator;
+				$bp->signup_results = $result;
 				unset($_POST['submit']);
-				var_dump( $result['errors'] );
-				// @todo Maybe I can put this in a cookie or something
-				bp_show_blog_signup_form( $result['blogname'], $result['blog_title'], $result['errors'] );
 				return false;
 			}
 
@@ -179,8 +178,6 @@ class BPBCM {
 			// Faking a redirect, groan
 			unset( $_POST['submit'] );
 			$_POST['status'] = 'success';
-
-
 		}
 	}
 
@@ -222,17 +219,24 @@ class BPBCM {
 	 * Outputs our additional markup on the Create A Blog screen
 	 */
 	function registration_form_markup( $errors = null ) {
+		global $bp;
+
 		if ( ! $this->requires_moderation() ) {
 			return;
 		}
 
+		$moderator = isset( $bp->signup_results['moderator'] ) ? $bp->signup_results['moderator'] : '';
+		$error = $errors->get_error_message( 'bpbcm-moderator' );
 		?>
 
 		<?php if ( isset( $_POST['status'] ) && 'success' === $_POST['status'] ) : ?>
 			<p><?php echo esc_html( $this->success_message() ) ?></p>
 		<?php else : ?>
+			<?php if ( $error ) : ?>
+				<p class="error"><?php echo esc_html( $error ) ?></p>
+			<?php endif ?>
 			<label for="bpbcm-moderator"><?php echo esc_html( $this->moderator_title() ) ?>: </label>
-			<input autocomplete="off" id="bpbcm-moderator" name="bpbcm-moderator" />
+			<input autocomplete="off" id="bpbcm-moderator" name="bpbcm-moderator" value="<?php echo esc_attr( $moderator ) ?>" />
 			<p class="description"><?php echo esc_html( $this->moderator_description() ) ?></a>
 		<?php endif; ?>
 
@@ -255,7 +259,7 @@ class BPBCM {
 		$retval = array();
 		foreach ( $user_query->results as $u ) {
 			$retval[] = array(
-				'label' => $u->display_name,
+				'label' => $u->display_name . ' (' . $u->user_login . ')',
 				'value' => $u->user_login,
 			);
 		}

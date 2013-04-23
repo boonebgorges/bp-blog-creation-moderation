@@ -104,8 +104,9 @@ Reject: %7$s', 'bpbcm' ),
 			$approve_link,
 			$reject_link
 		);
-		$message = apply_filters( 'bpbcm_notification_email_body', $message );
-		var_dump( $message ); die();
+		$message = apply_filters( 'bpbcm_notification_email_body', $message, $this );
+
+		wp_mail( $moderator->user_email, $subject, $message );
 	}
 
 	public function get_status() {
@@ -123,7 +124,7 @@ Reject: %7$s', 'bpbcm' ),
 
 	public function approve() {
 		wpmu_create_blog( $this->domain, $this->path, $this->title, $this->user_id, $this->meta, $this->site_id );
-		bp_blogs_confirm_blog_signup( $this->domain, $this->path, $this->title, $this->user_login, $this->user_email, $this->meta );
+		//bp_blogs_confirm_blog_signup( $this->domain, $this->path, $this->title, $this->user_login, $this->user_email, $this->meta );
 		wp_update_post( array(
 			'ID' => $this->registration_id,
 			'post_status' => 'publish',
